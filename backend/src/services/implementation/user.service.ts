@@ -1,0 +1,62 @@
+import { IUserRepository } from "@/repositories/interface";
+import { IUserService } from "../interface";
+import { IUser } from "@/models";
+import { createHttpError, generateRandomPassword, hashPassword } from "@/utils";
+import { HttpResponse, HttpStatus } from "@/constants";
+import { CreateUserRequestDTO } from "@/schema/user";
+import { BlockUserDTO, PaginatedData, UserQuery } from "@/types";
+import { sendCredentialsEmail } from "@/utils/send-email.util";
+import { transporter } from "@/configs";
+
+export class UserService implements IUserService {
+  constructor(private readonly _userRepository: IUserRepository) {}
+
+  async createUser(data: CreateUserRequestDTO): Promise<IUser> {
+    const user = await this._userRepository.findByEmail(data.email);
+    const generatedPassword = generateRandomPassword(6);
+    const hashedPassword = await hashPassword(generatedPassword);
+    console.log("user", user,generatedPassword);
+    if (user) {
+      throw createHttpError(
+        HttpStatus.BAD_REQUEST,
+        HttpResponse.USERNAME_EXIST
+      );
+    }
+    transporter.verify((error, success) => {
+  if (error) {
+    console.error("SMTP Connection Failed:", error);
+  } else {
+    console.log("Server is ready to send emails!",success);
+  }
+});
+    await sendCredentialsEmail(data.email, data.username, generatedPassword);
+    return this._userRepository.create({ ...data, password: hashedPassword });
+  }
+  async blockUnblockUser(data: BlockUserDTO): Promise<IUser> {
+    let user = await this._userRepository.findById(data.id);
+    if (!user || user.role === "admin") {
+      throw createHttpError(
+        HttpStatus.BAD_REQUEST,
+        HttpResponse.USER_NOT_FOUND
+      );
+    }
+
+    if (user.isBlocked !== data.isBlocked) {
+      user = await this._userRepository.update(data.id, {
+        isBlocked: data.isBlocked,
+      });
+      if (!user) {
+        throw createHttpError(
+          HttpStatus.BAD_REQUEST,
+          HttpResponse.USER_NOT_FOUND
+        );
+      }
+    }
+
+    return user;
+  }
+
+  async findUsers(query: UserQuery): Promise<PaginatedData<IUser>> {
+    return this._userRepository.findAllByQuery(query);
+  }
+}
