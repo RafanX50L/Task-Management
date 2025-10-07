@@ -13,4 +13,3 @@ export { toObjectId } from "./convert-object-id.utils";
 
 export * from "./socket.util";
 export * from "./generate-random.util";
-// export { uploadToCloudinary, generateSignedUrl } from "./cloudinary.util";
