@@ -6,7 +6,6 @@ import {
   createHttpError,
   generateAccessToken,
   generateRefreshToken,
-  hashPassword,
   verifyRefreshToken,
 } from "@/utils";
 import { HttpResponse, HttpStatus } from "@/constants";
@@ -21,7 +20,6 @@ export class AuthService implements IAuthService {
     password: string
   ): Promise<{ accessToken: string; refreshToken: string; user: IUser }> {
     const user = await this._userRepository.findByEmail(identifier);
-    await this._userRepository.create({email: "admin@gmail.com", password: await hashPassword("Admin@123"), role: "admin", username: "admin"});
 
     if (!user) {
       throw createHttpError(HttpStatus.NOT_FOUND, HttpResponse.USER_NOT_FOUND);
