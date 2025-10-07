@@ -17,6 +17,9 @@ export function verifyTokenMiddleware(
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { accessToken, refreshToken } = req.cookies;
+      console.log("accessToken", accessToken);
+      console.log("refreshToken", refreshToken);
+      console.log('cookies',req.cookies)
 
       if (!accessToken || !refreshToken) {
         throw createHttpError(HttpStatus.UNAUTHORIZED, HttpResponse.NO_TOKEN);
